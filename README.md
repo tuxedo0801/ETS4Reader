@@ -9,3 +9,4 @@ File file = new File("myknxproject.knxproj");
 KnxProjReader kpr = new KnxProjReader(file);
 List<GroupAddress> groupaddressList = kpr.getProjects().get(0).getGroupaddressList();
 ```
+See javadoc of Project, GroupAddress and Device for more details.
