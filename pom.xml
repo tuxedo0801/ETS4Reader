@@ -28,4 +28,18 @@
         <maven.compiler.target>1.7</maven.compiler.target>
     </properties>
     
+    <!-- upload informations for deploying the jar -->
+    <distributionManagement>
+        <repository>
+            <id>root1-releases</id>
+            <name>internal releases</name>
+            <url>http://nexus.root1.de/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>root1-snapshots</id>
+            <name>internal snapshots</name>
+            <url>http://nexus.root1.de/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+    
 </project>
