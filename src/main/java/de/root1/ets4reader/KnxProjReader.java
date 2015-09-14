@@ -103,6 +103,10 @@ public class KnxProjReader {
 
     }
 
+    /**
+     * Gets a list of projects. Typically the list has size=1
+     * @return list of projects found in .knxproj file
+     */
     public List<Project> getProjects() {
         return projects;
     }

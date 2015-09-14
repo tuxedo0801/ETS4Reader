@@ -58,18 +58,34 @@ public class GroupAddress {
         return "GroupAddress{" + "address=" + address + ", name=" + name + ", mainType=" + mainType + ", subType=" + subType + '}';
     }
 
+    /**
+     * Get textual representation of group address, f.i. 1/1/100
+     * @return 
+     */
     public String getAddress() {
         return address;
     }
 
+    /**
+     * Get the name of this groupaddress as defined in ETS
+     * @return ga name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Get DPT main type
+     * @return f.i. 5
+     */
     public int getMainType() {
         return mainType;
     }
 
+    /**
+     * Get DPT sub type
+     * @return f.i. 0
+     */
     public int getSubType() {
         return subType;
     }

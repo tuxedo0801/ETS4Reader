@@ -79,6 +79,10 @@ public class Project {
 
     }
 
+    /**
+     * get the name of the projects as defined in ETS
+     * @return project's name
+     */
     public String getName() {
         return name;
     }
@@ -118,10 +122,19 @@ public class Project {
         
     }
 
+    /**
+     * Get the group addresses used in this project, as defined in ETS
+     * @return list of group addresses
+     */
     public List<GroupAddress> getGroupaddressList() {
         return groupaddressList;
     }
     
+    /**
+     * get a specific group address by given Group Address name string
+     * @param ga name of the group address as defined in ETS, f.i. "Livingroom Light"
+     * @return the group address for the given name or null if not found
+     */
     public GroupAddress getGroupAddress(String ga) {
         for (GroupAddress groupaddress : groupaddressList) {
             if (groupaddress.getAddress().equals(ga)) {
@@ -131,6 +144,10 @@ public class Project {
         return null;
     }
 
+    /**
+     * Returns a list of devices used in this project
+     * @return list of devices
+     */
     public List<Device> getDeviceList() {
         return deviceList;
     }

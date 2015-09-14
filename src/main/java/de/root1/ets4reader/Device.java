@@ -83,7 +83,7 @@ public class Device {
      *
      * @return
      */
-    public Map<String, String> getRefMap() {
+    Map<String, String> getRefMap() {
         return refMap;
     }
 
@@ -91,5 +91,23 @@ public class Device {
     public String toString() {
         return "Device{" + "address=" + address + ", name=" + name + '}';
     }
+
+    /**
+     * Address of this device, f.i. 1.1.100
+     * @return address with dot-notation
+     */
+    public String getAddress() {
+        return address;
+    }
+
+    /**
+     * name of this device as defined in ETS
+     * @return 
+     */
+    public String getName() {
+        return name;
+    }
+    
+    
 
 }
