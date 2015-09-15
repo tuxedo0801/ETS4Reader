@@ -5,6 +5,7 @@
     <artifactId>ets4reader</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    <name>ETS4Reader ${project.version}</name>
     <dependencies>
         <dependency>
             <groupId>org.jdom</groupId>
