@@ -73,10 +73,10 @@ public class KnxProjReader {
         
         for (Project project : projects) {
             for (Device device : project.getDeviceList()){
-                log.info("Found device: {}", device);
+                log.debug("Found device: {}", device);
             }
             for(GroupAddress groupAddress : project.getGroupaddressList()){
-                log.info("Found groupaddress: {}", groupAddress);
+                log.debug("Found groupaddress: {}", groupAddress);
             }
         }
         
