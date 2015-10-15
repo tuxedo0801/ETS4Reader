@@ -22,22 +22,38 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jdom2.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author achristian
  */
 public class Device {
+    
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final String address;
     private String name;
     /**
      * ComObjInstanceRef-ID <-> GroupAddressRef-ID
      * <br>
-     * M-0083_A-0030-20-FCCB_=-30_R-10212 <-> P-05FA-0_GA-246
+     * M-0083_A-0030-20-FCCB_X-30_R-10212 <-> P-05FA-0_GA-246
      */
     private final Map<String, String> refMap = new HashMap<>();
+    
+    /**
+     * ComObjectInstanceRef-ID <-> user defined DPT 
+     */
+    private final Map<String, String> dptMap = new HashMap<>();
 
+    /**
+     * 
+     * @param project
+     * @param area
+     * @param line
+     * @param deviceInstance <DeviceInstance> Element
+     */
     Device(Project project, int area, int line, Element deviceInstance) {
 
         String memberAddress = deviceInstance.getAttributeValue("Address");
@@ -58,9 +74,17 @@ public class Device {
         Element comobjInstanceRefsElement = deviceInstance.getChild("ComObjectInstanceRefs", project.getNamespace());
         if (comobjInstanceRefsElement != null) {
             List<Element> children = comobjInstanceRefsElement.getChildren();
+            
+            // iterate over <ComObjectInstanceRefs> childs
             for (Element comObjectInstanceRefElement : children) {
 
                 String refId = comObjectInstanceRefElement.getAttributeValue("RefId");
+                String dpt = comObjectInstanceRefElement.getAttributeValue("DatapointType");
+                if (dpt!=null) {
+                    dptMap.put(refId, dpt);
+                    log.debug("User defined DPT for comobjrefid="+refId);
+                }
+                
                 Element connectorsElement = comObjectInstanceRefElement.getChild("Connectors", project.getNamespace());
                 if (connectorsElement != null) {
                     List<Element> connectorsChildren = connectorsElement.getChildren();
@@ -79,13 +103,24 @@ public class Device {
     /**
      * ComObjInstanceRef-ID <-> GroupAddressRef-ID
      * <br>
-     * M-0083_A-0030-20-FCCB_=-30_R-10212 <-> P-05FA-0_GA-246
+     * M-0083_A-0030-20-FCCB_X-30_R-10212 <-> P-05FA-0_GA-246
      *
      * @return
      */
     Map<String, String> getRefMap() {
         return refMap;
     }
+
+    /**
+     * ComObjInstanceRed-ID <-> user defined DPT
+     * 
+     * @return 
+     */
+    Map<String, String> getDptMap() {
+        return dptMap;
+    }
+    
+    
 
     @Override
     public String toString() {

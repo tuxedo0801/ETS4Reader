@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * @author achristian
  */
 public class KnxProjReader {
-    
+
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final Pattern projectPattern = Pattern.compile("P-[0-9A-F]{4}");
@@ -62,6 +62,13 @@ public class KnxProjReader {
 
     private final List<Project> projects = new ArrayList<>();
 
+    /**
+     * Starts reading the project. This might take some time ...
+     *
+     * @param knxprojFile
+     * @throws IOException
+     * @throws JDOMException
+     */
     public KnxProjReader(File knxprojFile) throws IOException, JDOMException {
         File tmpFolder = createTempDirectory();
         log.debug("Extracting to {}", tmpFolder.getCanonicalPath());
@@ -70,47 +77,47 @@ public class KnxProjReader {
         readProjects(tmpFolder);
 
         readDPT(tmpFolder);
-        
+
         for (Project project : projects) {
-            for (Device device : project.getDeviceList()){
+            for (Device device : project.getDeviceList()) {
                 log.debug("Found device: {}", device);
             }
-            for(GroupAddress groupAddress : project.getGroupaddressList()){
+            for (GroupAddress groupAddress : project.getGroupaddressList()) {
                 log.debug("Found groupaddress: {}", groupAddress);
             }
         }
-        
-        log.debug("Deleting temp files {}"+tmpFolder.getAbsolutePath());
-        Path directory = Paths.get(tmpFolder.toURI());
-        Files.walkFileTree(directory, new SimpleFileVisitor<Path>(){
+        /*
+         log.debug("Deleting temp files {}" + tmpFolder.getAbsolutePath());
+         Path directory = Paths.get(tmpFolder.toURI());
+         Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
 
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                log.trace("delete file: {}", file);
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
+         @Override
+         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+         log.trace("delete file: {}", file);
+         Files.delete(file);
+         return FileVisitResult.CONTINUE;
+         }
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                log.trace("del direte: {}", dir);
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-            
-        });
-        log.debug("Deleting temp files *DONE*");
+         @Override
+         public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+         log.trace("del direte: {}", dir);
+         Files.delete(dir);
+         return FileVisitResult.CONTINUE;
+         }
 
+         });
+         log.debug("Deleting temp files *DONE*");
+         */
     }
 
     /**
      * Gets a list of projects. Typically the list has size=1
+     *
      * @return list of projects found in .knxproj file
      */
     public List<Project> getProjects() {
         return projects;
     }
-    
 
     public static File createTempDirectory() throws IOException {
         final File temp;
@@ -139,7 +146,7 @@ public class KnxProjReader {
                     long size = zipEntry.getSize();
                     long compressedSize = zipEntry.getCompressedSize();
                     log.debug(String.format("name: %-20s | size: %6d | compressed size: %6d\n",
-                            name, size, compressedSize));
+                        name, size, compressedSize));
 
                     // Do we need to create a directory ?
                     File file = new File(targetDir, name);
@@ -213,44 +220,53 @@ public class KnxProjReader {
 
                     if (comObjInstanceRef != null) {
 
-                        // extract manufacturer id (which is folder name)
-                        String manufacturerId;
-                        Matcher matcher = manufacturerPattern.matcher(comObjInstanceRef);
-                        if (matcher.find()) {
-                            manufacturerId = comObjInstanceRef.substring(matcher.start(), matcher.end());
-                        } else {
-                            log.error("No manufacturer found for {}", comObjInstanceRef);
-                            manufacturerId = "";
-                        }
+                        // It's a matching device
+                        String dpt = device.getDptMap().get(comObjInstanceRef);
 
-                        // extract device xml file
-                        String deviceFileName;
-                        Matcher deviceMatcher = manufacturerDevicePattern.matcher(comObjInstanceRef);
-                        if (deviceMatcher.find()) {
-                            deviceFileName = comObjInstanceRef.substring(deviceMatcher.start(), deviceMatcher.end());
-                        } else {
-                            log.error("No device found for {}", comObjInstanceRef);
-                            deviceFileName = "";
-                        }
+                        if (dpt == null) {
 
-                        Map<String, String> cache = manufacturerCache.get(deviceFileName);
+                            // extract manufacturer refId (which is folder name)
+                            String manufacturerId;
+                            Matcher matcher = manufacturerPattern.matcher(comObjInstanceRef);
+                            if (matcher.find()) {
+                                manufacturerId = comObjInstanceRef.substring(matcher.start(), matcher.end());
+                            } else {
+                                log.error("No manufacturer found for {}", comObjInstanceRef);
+                                manufacturerId = "";
+                            }
 
-                        if (cache == null) {
+                            // extract device xml file
+                            String deviceFileName;
+                            Matcher deviceMatcher = manufacturerDevicePattern.matcher(comObjInstanceRef);
+                            if (deviceMatcher.find()) {
+                                deviceFileName = comObjInstanceRef.substring(deviceMatcher.start(), deviceMatcher.end());
+                            } else {
+                                log.error("No device found for {}", comObjInstanceRef);
+                                deviceFileName = "";
+                            }
+
+                            Map<String, String> cache = manufacturerCache.get(deviceFileName);
 
                             File mFolder = new File(tmpFolder, manufacturerId);
                             File mFile = new File(mFolder, deviceFileName + ".xml");
-                            log.debug("Create cache for " + deviceFileName);
-                            cache = createCache(mFile);
-                            log.debug("Create cache for {}", deviceFileName + " ... *DONE*");
-                            manufacturerCache.put(deviceFileName, cache);
+                            if (cache == null) {
+
+                                log.debug("Create cache for " + deviceFileName);
+                                cache = createCache(mFile);
+                                log.debug("Create cache for {}", deviceFileName + " ... *DONE*");
+                                manufacturerCache.put(deviceFileName, cache);
+
+                            } else {
+                                log.debug("Using cache for {}", deviceFileName);
+                            }
+
+                            dpt = cache.get(comObjInstanceRef);
+                            log.debug("Found device defined DPT '{}' for GA {}", dpt, groupAddress.getAddress());
                         } else {
-                            log.debug("Using cache for {}", deviceFileName);
+                            log.debug("Found ETS defined DPT '{}' for GA {}", dpt, groupAddress.getAddress());
                         }
 
-                        String dpt = cache.get(comObjInstanceRef);
-
                         if (dpt != null) {
-                            log.debug("Found DPT: {}", dpt);
 
                             dpt = dpt.split(" ")[0];
                             String[] split = dpt.split("-");
@@ -263,7 +279,8 @@ public class KnxProjReader {
                                 int subType = 0;
                                 groupAddress.setDataType(mainType, subType);
                             }
-                            log.debug("Updated DPT: {}", groupAddress);
+                        } else {
+                            log.warn(">>>>> Groupaddress {} has no DPT! Please configure in ETS! <<<<<", groupAddress.getAddress());
                         }
 
                     }
@@ -275,6 +292,7 @@ public class KnxProjReader {
 
     private Map<String, String> createCache(File mFile) throws JDOMException, IOException {
 
+        // ComObjectRef -> DPT
         Map<String, String> cache = new HashMap<>();
 
         SAXBuilder builder = new SAXBuilder();
@@ -283,14 +301,40 @@ public class KnxProjReader {
         Element rootElement = document.getRootElement();
         Namespace ns = rootElement.getNamespace();
 
+        // ComObject ID -> DPT
+        Map<String, String> comObjectDptCache = new HashMap<>();
+
         Element applicationProgramsElement = rootElement.getChild("ManufacturerData", ns).getChild("Manufacturer", ns).getChild("ApplicationPrograms", ns);
+
+        // Cache all comobject's DPTs
+        Element comObjectTable = applicationProgramsElement.getChild("ApplicationProgram", ns).getChild("Static", ns).getChild("ComObjectTable", ns);
+        List<Element> comObjects = comObjectTable.getChildren("ComObject", ns);
+        for (Element comObject : comObjects) {
+            String id = comObject.getAttributeValue("Id");
+            String dpt = comObject.getAttributeValue("DatapointType");
+            if (dpt == null) {
+                log.debug("ManufacturerDevice File {} comobject id={} has no DPT?!", mFile.getAbsolutePath(), id);
+            }
+            comObjectDptCache.put(id, dpt);
+        }
+
         Element comObjectRefs = applicationProgramsElement.getChild("ApplicationProgram", ns).getChild("Static", ns).getChild("ComObjectRefs", ns);
         List<Element> children = comObjectRefs.getChildren("ComObjectRef", ns);
         for (Element comObjectRefElement : children) {
-            String id = comObjectRefElement.getAttributeValue("Id");
+            String refId = comObjectRefElement.getAttributeValue("Id");
+            String comObjectId = comObjectRefElement.getAttributeValue("RefId");
+            
             String dpt = comObjectRefElement.getAttributeValue("DatapointType");
+            if (dpt==null) {
+                // ask comobject cache
+                dpt = comObjectDptCache.get(comObjectId);
+            }
 
-            cache.put(id, dpt);
+            if (dpt == null) {
+                log.debug("ComObjRef '{}' has no DPT??? file: {}", refId, mFile.getAbsolutePath());
+            }
+
+            cache.put(refId, dpt);
         }
 
         return cache;
