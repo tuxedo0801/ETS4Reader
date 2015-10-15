@@ -280,7 +280,7 @@ public class KnxProjReader {
                                 groupAddress.setDataType(mainType, subType);
                             }
                         } else {
-                            log.warn(">>>>> Groupaddress {} has no DPT! Please configure in ETS! <<<<<", groupAddress.getAddress());
+                            log.warn(">>>>>> Groupaddress {} has no DPT! Please configure in ETS! <<<<<<", groupAddress.getAddress());
                         }
 
                     }
