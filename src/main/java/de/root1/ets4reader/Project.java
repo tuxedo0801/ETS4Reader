@@ -217,7 +217,7 @@ public class Project {
 
                 }
             } else if (element.getName().equals("GroupAddress")) {
-                GroupAddress ga = new GroupAddress(this, element);
+                GroupAddress ga = new GroupAddress(element);
                 log.debug("Found GroupAddress: {}",ga);
                 groupaddressList.add(ga);
             }
@@ -227,6 +227,11 @@ public class Project {
 
     Namespace getNamespace() {
         return ns;
+    }
+
+    void addGroupAddress(GroupAddress groupAddress) {
+        groupaddressList.add(groupAddress);
+        
     }
 
 }

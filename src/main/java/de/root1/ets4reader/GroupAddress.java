@@ -26,14 +26,18 @@ import org.jdom2.Element;
  */
 public class GroupAddress {
     private final String address;
+    
+    public static final int UNSPECIFIED = -1;
 
-    private final String name;
+    private String name;
     private final String internalId;
-    private int mainType;
-    private int subType;
+    private int mainType=UNSPECIFIED;
+    private int subType=UNSPECIFIED;
+    private boolean connected;
+    private boolean userConfigured;
     
 
-    GroupAddress(Project project, Element gaElement) {
+    GroupAddress(Element gaElement) {
         name = gaElement.getAttributeValue("Name");
         
         int intAddress = Integer.parseInt(gaElement.getAttributeValue("Address"));
@@ -49,13 +53,22 @@ public class GroupAddress {
         
     }
 
+    GroupAddress(String address, String dpt, String name) {
+        String[] split = dpt.split("\\.");
+        mainType = Integer.parseInt(split[0]);
+        subType = Integer.parseInt(split[1]);
+        this.address = address;
+        this.name = name;
+        internalId = "USERCONFIG";
+    }
+
     String getInternalId() {
         return internalId;
     }
 
     @Override
     public String toString() {
-        return "GroupAddress{" + "address=" + address + ", name=" + name + ", mainType=" + mainType + ", subType=" + subType + '}';
+        return "GroupAddress{" + "address=" + address + ", name=" + name + ", userconfig="+userConfigured+", connected="+isConnected()+", mainType=" + mainType + ", subType=" + subType + '}';
     }
 
     /**
@@ -67,11 +80,11 @@ public class GroupAddress {
     }
 
     /**
-     * Get the name of this groupaddress as defined in ETS
+     * Get the name of this groupaddress as defined in ETS. If not defined, address is returned
      * @return ga name
      */
     public String getName() {
-        return name;
+        return name!=null?name:getAddress();
     }
 
     /**
@@ -95,8 +108,38 @@ public class GroupAddress {
         this.subType = subType;
     }
 
+    /**
+     * DPT String, like "1.001"
+     * @return 
+     */
     public String getTypeString() {
         return String.format("%d.%03d",mainType, subType);
     }
+
+    void setConnected(boolean connectedToDevice) {
+        this.connected = connectedToDevice;
+    }
+
+    /**
+     * Returns whether the GA is connected to a device or not.
+     * @return GA is connected with a device in ETS, or not
+     */
+    public boolean isConnected() {
+        return connected;
+    }
+
+    void setName(String name) {
+        this.name = name;
+    }
+
+    public boolean isUserConfigured() {
+        return userConfigured;
+    }
+
+    void setUserConfigured(boolean userConfigured) {
+        this.userConfigured = userConfigured;
+    }
+    
+    
     
 }

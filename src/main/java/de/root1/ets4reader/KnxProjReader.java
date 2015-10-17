@@ -21,14 +21,9 @@ package de.root1.ets4reader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -43,6 +38,8 @@ import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.Namespace;
 import org.jdom2.input.SAXBuilder;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class KnxProjReader {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final Pattern projectPattern = Pattern.compile("P-[0-9A-F]{4}");
     private final Pattern manufacturerPattern = Pattern.compile("M-[0-9A-F]{4}");
@@ -75,6 +72,8 @@ public class KnxProjReader {
         extract(knxprojFile, tmpFolder);
 
         readProjects(tmpFolder);
+
+        readUserConfiguration(knxprojFile);
 
         readDPT(tmpFolder);
 
@@ -146,7 +145,7 @@ public class KnxProjReader {
                     long size = zipEntry.getSize();
                     long compressedSize = zipEntry.getCompressedSize();
                     log.debug(String.format("name: %-20s | size: %6d | compressed size: %6d\n",
-                        name, size, compressedSize));
+                            name, size, compressedSize));
 
                     // Do we need to create a directory ?
                     File file = new File(targetDir, name);
@@ -213,13 +212,15 @@ public class KnxProjReader {
             for (GroupAddress groupAddress : project.getGroupaddressList()) {
                 String internalId = groupAddress.getInternalId();
 
+                boolean connectedToDevice = false;
+
                 for (Device device : project.getDeviceList()) {
                     Map<String, String> refMap = device.getRefMap();
 
                     String comObjInstanceRef = Utils.getKeyForValue(refMap, internalId);
 
-                    if (comObjInstanceRef != null) {
-
+                    if (comObjInstanceRef != null && !connectedToDevice) {
+                        connectedToDevice = true;
                         // It's a matching device
                         String dpt = device.getDptMap().get(comObjInstanceRef);
 
@@ -285,6 +286,10 @@ public class KnxProjReader {
 
                     }
                 }
+                if (!connectedToDevice) {
+                    log.debug(">>>>>> Groupaddress {} is not connected to any device in ETS! <<<<<<", groupAddress.getAddress());
+                }
+                groupAddress.setConnected(connectedToDevice);
             }
 
         }
@@ -323,9 +328,9 @@ public class KnxProjReader {
         for (Element comObjectRefElement : children) {
             String refId = comObjectRefElement.getAttributeValue("Id");
             String comObjectId = comObjectRefElement.getAttributeValue("RefId");
-            
+
             String dpt = comObjectRefElement.getAttributeValue("DatapointType");
-            if (dpt==null) {
+            if (dpt == null) {
                 // ask comobject cache
                 dpt = comObjectDptCache.get(comObjectId);
             }
@@ -338,6 +343,100 @@ public class KnxProjReader {
         }
 
         return cache;
+    }
+
+    private void readUserConfiguration(File knxprojFile) {
+        try {
+            File userConfigFile = new File(knxprojFile.getAbsolutePath() + ".user.xml");
+
+            Project project = projects.get(0);
+
+            List<GroupAddress> gaWithMissingConfig = new ArrayList<>();
+
+            // get unconnected or dpt-undefined GAs
+            List<GroupAddress> groupaddressList = project.getGroupaddressList();
+            for (GroupAddress ga : groupaddressList) {
+                if (!ga.isConnected() || ga.getMainType() == GroupAddress.UNSPECIFIED) {
+                    gaWithMissingConfig.add(ga);
+                }
+            }
+
+            SAXBuilder builder = new SAXBuilder();
+
+            Document document = (Document) builder.build(userConfigFile);
+            Element rootElement = document.getRootElement();
+
+            List<String> alreadyKnownUserConfigGa = new ArrayList<>();
+
+            List<Element> alreadyKnown = rootElement.getChildren("ga");
+            for (Element ak : alreadyKnown) {
+                alreadyKnownUserConfigGa.add(ak.getAttributeValue("address"));
+            }
+
+            boolean needToSafe = false;
+
+            if (!gaWithMissingConfig.isEmpty()) {
+                for (GroupAddress ga : gaWithMissingConfig) {
+
+                    if (!alreadyKnownUserConfigGa.contains(ga.getAddress())) {
+                        Element gaElement = new Element("ga");
+                        gaElement.setAttribute("address", ga.getAddress());
+                        gaElement.setAttribute("dpt", "");
+                        rootElement.addContent(gaElement);
+                        needToSafe = true;
+                    }
+
+                }
+
+                if (needToSafe) {
+                    // new XMLOutputter().output(doc, System.out);
+                    XMLOutputter xmlOutput = new XMLOutputter();
+
+                    // display nice nice
+                    xmlOutput.setFormat(Format.getPrettyFormat());
+                    xmlOutput.output(document, new FileWriter(userConfigFile));
+                }
+            }
+
+            List<Element> children = rootElement.getChildren("ga");
+            for (Element gaElement : children) {
+                String address = gaElement.getAttributeValue("address");
+                String dpt = gaElement.getAttributeValue("dpt");
+
+                if (dpt != null && dpt.isEmpty()) {
+                    dpt = null;
+                }
+                String name = gaElement.getAttributeValue("name");
+                if (name != null && name.isEmpty()) {
+                    name = null;
+                }
+
+                GroupAddress groupAddress = project.getGroupAddress(address);
+
+                if (groupAddress != null && dpt != null) {
+
+                    String[] split = dpt.split("\\.");
+
+                    groupAddress.setDataType(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
+                    groupAddress.setConnected(true);
+
+                    if (name != null) {
+                        groupAddress.setName(name);
+                    }
+                    groupAddress.setUserConfigured(true);
+                } else if (dpt!=null){
+                    groupAddress = new GroupAddress(address, dpt, name);
+                    groupAddress.setConnected(true);
+                    project.addGroupAddress(groupAddress);
+                    groupAddress.setUserConfigured(true);
+                }
+            }
+
+        } catch (JDOMException ex) {
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
 }
