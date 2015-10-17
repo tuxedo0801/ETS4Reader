@@ -403,18 +403,24 @@ public class KnxProjReader {
 
             }
             
-            if (needToSafe) {
-                // new XMLOutputter().output(doc, System.out);
-                XMLOutputter xmlOutput = new XMLOutputter();
-
-                // display nice nice
-                xmlOutput.setFormat(Format.getPrettyFormat());
-                xmlOutput.output(document, new FileWriter(userConfigFile));
-            }
+            
 
             List<Element> children = rootElement.getChildren("ga");
             for (Element gaElement : children) {
                 String address = gaElement.getAttributeValue("address");
+                
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+                // TODO: TO BE TESTED!
+                if (System.getProperty("purge")!=null) {
+                    GroupAddress ga = project.getGroupAddress(address);
+                    if (ga.isConnected() && ga.getMainType()!=GroupAddress.UNSPECIFIED) {
+                        rootElement.removeContent(gaElement);
+                        log.info("PURGE: Removing GA={} from userconfig because of ETS config now available");
+                        needToSafe = true;
+                        continue;
+                    }
+                }
+                
                 String dpt = gaElement.getAttributeValue("dpt");
 
                 if (dpt != null && dpt.isEmpty()) {
@@ -444,6 +450,15 @@ public class KnxProjReader {
                     project.addGroupAddress(groupAddress);
                     groupAddress.setUserConfigured(true);
                 }
+            }
+            
+            if (needToSafe) {
+                // new XMLOutputter().output(doc, System.out);
+                XMLOutputter xmlOutput = new XMLOutputter();
+
+                // display nice nice
+                xmlOutput.setFormat(Format.getPrettyFormat());
+                xmlOutput.output(document, new FileWriter(userConfigFile));
             }
 
         } catch (JDOMException ex) {
