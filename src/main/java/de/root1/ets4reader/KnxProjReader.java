@@ -33,6 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import org.jdom2.Comment;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -72,10 +73,8 @@ public class KnxProjReader {
         extract(knxprojFile, tmpFolder);
 
         readProjects(tmpFolder);
-
-        readUserConfiguration(knxprojFile);
-
         readDPT(tmpFolder);
+        readUserConfiguration(knxprojFile);
 
         for (Project project : projects) {
             for (Device device : project.getDeviceList()) {
@@ -215,10 +214,14 @@ public class KnxProjReader {
                 boolean connectedToDevice = false;
 
                 for (Device device : project.getDeviceList()) {
-                    Map<String, String> refMap = device.getRefMap();
+                    if (connectedToDevice) {
+                        break;
+                    }
+                    Map<String, List<String>> refMap = device.getRefMap();
 
                     String comObjInstanceRef = Utils.getKeyForValue(refMap, internalId);
 
+                    
                     if (comObjInstanceRef != null && !connectedToDevice) {
                         connectedToDevice = true;
                         // It's a matching device
@@ -248,10 +251,9 @@ public class KnxProjReader {
 
                             Map<String, String> cache = manufacturerCache.get(deviceFileName);
 
-                            File mFolder = new File(tmpFolder, manufacturerId);
-                            File mFile = new File(mFolder, deviceFileName + ".xml");
                             if (cache == null) {
-
+                                File mFolder = new File(tmpFolder, manufacturerId);
+                                File mFile = new File(mFolder, deviceFileName + ".xml");
                                 log.debug("Create cache for " + deviceFileName);
                                 cache = createCache(mFile);
                                 log.debug("Create cache for {}", deviceFileName + " ... *DONE*");
@@ -357,29 +359,40 @@ public class KnxProjReader {
             List<GroupAddress> groupaddressList = project.getGroupaddressList();
             for (GroupAddress ga : groupaddressList) {
                 if (!ga.isConnected() || ga.getMainType() == GroupAddress.UNSPECIFIED) {
+                    log.info("{} has missing DPT or is unconnected", ga);
                     gaWithMissingConfig.add(ga);
                 }
             }
 
-            SAXBuilder builder = new SAXBuilder();
-
-            Document document = (Document) builder.build(userConfigFile);
-            Element rootElement = document.getRootElement();
-
-            List<String> alreadyKnownUserConfigGa = new ArrayList<>();
-
-            List<Element> alreadyKnown = rootElement.getChildren("ga");
-            for (Element ak : alreadyKnown) {
-                alreadyKnownUserConfigGa.add(ak.getAttributeValue("address"));
-            }
 
             boolean needToSafe = false;
+            
+            SAXBuilder builder = new SAXBuilder();
+            Document document;
+            if (userConfigFile.exists()) {
+                document = (Document) builder.build(userConfigFile);
+            } else {
+                document = new Document(new Element("knxprojectuserconfiguration"));
+                needToSafe = true;
+            }
+            
+            Element rootElement = document.getRootElement();
+
+            // Get already known GAs from .knxproj.user.xml File --> kind of cache
+            List<String> alreadyKnownUserConfigGa = new ArrayList<>();
+            List<Element> gaElements = rootElement.getChildren("ga");
+            for (Element gaElement : gaElements) {
+                alreadyKnownUserConfigGa.add(gaElement.getAttributeValue("address"));
+            }
+
 
             if (!gaWithMissingConfig.isEmpty()) {
                 for (GroupAddress ga : gaWithMissingConfig) {
 
                     if (!alreadyKnownUserConfigGa.contains(ga.getAddress())) {
                         Element gaElement = new Element("ga");
+                        
+                        gaElement.addContent(new Comment(ga.getName()));
                         gaElement.setAttribute("address", ga.getAddress());
                         gaElement.setAttribute("dpt", "");
                         rootElement.addContent(gaElement);
@@ -388,14 +401,15 @@ public class KnxProjReader {
 
                 }
 
-                if (needToSafe) {
-                    // new XMLOutputter().output(doc, System.out);
-                    XMLOutputter xmlOutput = new XMLOutputter();
+            }
+            
+            if (needToSafe) {
+                // new XMLOutputter().output(doc, System.out);
+                XMLOutputter xmlOutput = new XMLOutputter();
 
-                    // display nice nice
-                    xmlOutput.setFormat(Format.getPrettyFormat());
-                    xmlOutput.output(document, new FileWriter(userConfigFile));
-                }
+                // display nice nice
+                xmlOutput.setFormat(Format.getPrettyFormat());
+                xmlOutput.output(document, new FileWriter(userConfigFile));
             }
 
             List<Element> children = rootElement.getChildren("ga");

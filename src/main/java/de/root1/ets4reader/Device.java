@@ -18,6 +18,7 @@
  */
 package de.root1.ets4reader;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class Device {
      * <br>
      * M-0083_A-0030-20-FCCB_X-30_R-10212 <-> P-05FA-0_GA-246
      */
-    private final Map<String, String> refMap = new HashMap<>();
+    private final Map<String, List<String>> refMap = new HashMap<>();
     
     /**
      * ComObjectInstanceRef-ID <-> user defined DPT 
@@ -89,9 +90,15 @@ public class Device {
                 if (connectorsElement != null) {
                     List<Element> connectorsChildren = connectorsElement.getChildren();
                     if (!connectorsChildren.isEmpty()) {
-                        Element element = connectorsChildren.get(0);
-                        String gropAddressRefId = element.getAttributeValue("GroupAddressRefId");
-                        refMap.put(refId, gropAddressRefId);
+                        for (Element child : connectorsChildren) {
+                            String groupAddressRefId = child.getAttributeValue("GroupAddressRefId");
+                            List<String> groupAddrRefIfList = refMap.get(refId);
+                            if (groupAddrRefIfList==null) {
+                                groupAddrRefIfList = new ArrayList<>();
+                                refMap.put(refId, groupAddrRefIfList);
+                            }
+                            groupAddrRefIfList.add(groupAddressRefId);
+                        }
                     }
                 }
 
@@ -103,11 +110,11 @@ public class Device {
     /**
      * ComObjInstanceRef-ID <-> GroupAddressRef-ID
      * <br>
-     * M-0083_A-0030-20-FCCB_X-30_R-10212 <-> P-05FA-0_GA-246
+     * M-0083_A-0030-20-FCCB_X-30_R-10212 <-> List of GaRefIDs like P-05FA-0_GA-246
      *
      * @return
      */
-    Map<String, String> getRefMap() {
+    Map<String, List<String>> getRefMap() {
         return refMap;
     }
 

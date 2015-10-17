@@ -18,25 +18,31 @@
  */
 package de.root1.ets4reader;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  *
  * @author achristian
  */
 public class Utils {
-    
-    public static <KEY, VALUE> KEY  getKeyForValue(Map<KEY,VALUE> map, VALUE value){
+
+    static String getKeyForValue(Map<String, List<String>> refMap, String internalId) {
         
-        Set<Map.Entry<KEY, VALUE>> entrySet = map.entrySet();
-        
-        for (Map.Entry<KEY, VALUE> entry : entrySet) {
-            if (entry.getValue().equals(value)) {
-                return entry.getKey();
+        Iterator<String> iterator = refMap.keySet().iterator();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            List<String> list = refMap.get(key);
+            for (String value : list) {
+                if (value.equals(internalId)) {
+                    return key;
+                }
             }
         }
         return null;
     }
+    
+    
     
 }
