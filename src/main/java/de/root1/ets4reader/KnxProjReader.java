@@ -276,11 +276,11 @@ public class KnxProjReader {
                             if (split[0].equals("DPST")) {
                                 int mainType = Integer.parseInt(split[1]);
                                 int subType = Integer.parseInt(split[2]);
-                                groupAddress.setDataType(mainType, subType);
+                                groupAddress.setDataPointType(mainType, subType);
                             } else if (split[0].equals("DPT")) {
                                 int mainType = Integer.parseInt(split[1]);
                                 int subType = 0;
-                                groupAddress.setDataType(mainType, subType);
+                                groupAddress.setDataPointType(mainType, subType);
                             }
                         } else {
                             log.warn(">>>>>> Groupaddress {} has no DPT! Please configure in ETS! <<<<<<", groupAddress.getAddress());
@@ -437,7 +437,7 @@ public class KnxProjReader {
 
                     String[] split = dpt.split("\\.");
 
-                    groupAddress.setDataType(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
+                    groupAddress.setDataPointType(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
                     groupAddress.setConnected(true);
 
                     if (name != null) {

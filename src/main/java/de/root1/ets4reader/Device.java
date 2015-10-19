@@ -144,7 +144,7 @@ public class Device {
 
     /**
      * name of this device as defined in ETS
-     * @return 
+     * @return device name
      */
     public String getName() {
         return name;

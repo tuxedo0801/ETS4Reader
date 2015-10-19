@@ -73,7 +73,7 @@ public class GroupAddress {
 
     /**
      * Get textual representation of group address, f.i. 1/1/100
-     * @return 
+     * @return address
      */
     public String getAddress() {
         return address;
@@ -103,16 +103,16 @@ public class GroupAddress {
         return subType;
     }
     
-    void setDataType(int mainType, int subType) {
+    void setDataPointType(int mainType, int subType) {
         this.mainType = mainType;
         this.subType = subType;
     }
 
     /**
      * DPT String, like "1.001"
-     * @return 
+     * @return DPT
      */
-    public String getTypeString() {
+    public String getDataPointType() {
         return String.format("%d.%03d",mainType, subType);
     }
 
