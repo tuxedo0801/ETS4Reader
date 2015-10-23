@@ -24,6 +24,12 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -85,7 +91,6 @@ public class KnxProjReader {
                 log.debug("Found groupaddress: {}", groupAddress);
             }
         }
-        /*
          log.debug("Deleting temp files {}" + tmpFolder.getAbsolutePath());
          Path directory = Paths.get(tmpFolder.toURI());
          Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
@@ -106,7 +111,6 @@ public class KnxProjReader {
 
          });
          log.debug("Deleting temp files *DONE*");
-         */
     }
 
     /**
