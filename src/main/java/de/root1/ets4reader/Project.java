@@ -59,7 +59,14 @@ public class Project {
         projTmpFolder = projFolder;
         SAXBuilder builder = new SAXBuilder();
 
-        Document document = (Document) builder.build(new File(projFolder, projectfile));
+        File projectFile = new File(projFolder, projectfile);
+        if (!projectFile.exists()) {
+            projectFile = new File(projFolder, projectfile.toLowerCase());
+            log.debug("Using lower case project file name");
+        }
+        
+        Document document = (Document) builder.build(projectFile);
+        
         Element rootElement = document.getRootElement();
         Namespace ns = rootElement.getNamespace();
 
