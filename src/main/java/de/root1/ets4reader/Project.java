@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * @author achristian
  */
 public class Project {
-    
+
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     private static final String projectfile = "Project.xml";
@@ -72,21 +72,25 @@ public class Project {
 
         Element projInfoElement = projectElement.getChild("ProjectInformation", ns);
         name = projInfoElement.getAttributeValue("Name");
-        lastModified = DatatypeConverter.parseDateTime(projInfoElement.getAttributeValue("LastModified"));
-        projectStart = DatatypeConverter.parseDateTime(projInfoElement.getAttributeValue("ProjectStart"));
-
+        String lastModifiedString = projInfoElement.getAttributeValue("LastModified");
+        String projectStartString = projInfoElement.getAttributeValue("ProjectStart");
+        Calendar unknown = Calendar.getInstance();
+        unknown.setTimeInMillis(0);
+        lastModified = lastModifiedString != null && !lastModifiedString.isEmpty() ? DatatypeConverter.parseDateTime(lastModifiedString) : unknown;
+        projectStart = projectStartString != null && !projectStartString.isEmpty() ? DatatypeConverter.parseDateTime(projectStartString) : unknown;
         readProjectData();
 
     }
 
     /**
      * get the name of the projects as defined in ETS
+     *
      * @return project's name
      */
     public String getName() {
         return name;
     }
-    
+
     @Override
     public String toString() {
         return "Project{" + "internalID=" + internalID + ", name=" + name + ", lastModified=" + lastModified.getTime() + ", projectStart=" + projectStart.getTime() + '}';
@@ -119,20 +123,23 @@ public class Project {
             }
 
         }
-        
+
     }
 
     /**
      * Get the group addresses used in this project, as defined in ETS
+     *
      * @return list of group addresses
      */
     public List<GroupAddress> getGroupaddressList() {
         return groupaddressList;
     }
-    
+
     /**
      * get a specific group address by given Group Address name string
-     * @param ga name of the group address as defined in ETS, f.i. "Livingroom Light"
+     *
+     * @param ga name of the group address as defined in ETS, f.i. "Livingroom
+     * Light"
      * @return the group address for the given name or null if not found
      */
     public GroupAddress getGroupAddress(String ga) {
@@ -146,12 +153,12 @@ public class Project {
 
     /**
      * Returns a list of devices used in this project
+     *
      * @return list of devices
      */
     public List<Device> getDeviceList() {
         return deviceList;
     }
-    
 
     /**
      * <pre>
@@ -181,7 +188,7 @@ public class Project {
                 for (Element device : devices) {
 
                     Device d = new Device(this, areaValue, lineValue, device);
-                    log.debug("Found device: {}",d);
+                    log.debug("Found device: {}", d);
                     deviceList.add(d);
 
                 }
@@ -200,6 +207,7 @@ public class Project {
      *       GroupRange         <-- Sub
      *         GroupAddress         <-- GA
      * </pre> @param groupaddressesElement
+     *
      * @param ns
      */
     private void readGroupAdresses(Element groupaddressesElement, Namespace ns) {
@@ -218,11 +226,11 @@ public class Project {
                 }
             } else if (element.getName().equals("GroupAddress")) {
                 GroupAddress ga = new GroupAddress(element);
-                log.debug("Found GroupAddress: {}",ga);
+                log.debug("Found GroupAddress: {}", ga);
                 groupaddressList.add(ga);
             }
         }
-        
+
     }
 
     Namespace getNamespace() {
@@ -231,7 +239,7 @@ public class Project {
 
     void addGroupAddress(GroupAddress groupAddress) {
         groupaddressList.add(groupAddress);
-        
+
     }
 
 }
