@@ -56,7 +56,8 @@ public class KnxProjReader {
     private final Pattern manufacturerPattern = Pattern.compile("M-[0-9A-F]{4}");
 
     // M-0083_A-004D-12-E268
-    private final Pattern manufacturerDevicePattern = Pattern.compile("M-[0-9A-F]{4}_[0-9A-F]-[0-9A-F]{4}-[0-9A-F]{2}-[0-9A-F]{4}");
+    // M-00C8_A-2820-40-090B-O00C5
+    private final Pattern manufacturerDevicePattern = Pattern.compile("M-[0-9A-F]{4}_[0-9A-F]-[0-9A-F]{4}-[0-9A-F]{2}-[0-9A-F]{4}(-[0-9A-Z]{1}[0-9A-F]{4})?");
 
     private final List<Project> projects = new ArrayList<>();
 
