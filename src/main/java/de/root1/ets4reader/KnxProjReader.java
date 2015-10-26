@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import org.jdom2.Comment;
 import org.jdom2.Document;
@@ -139,6 +140,9 @@ public class KnxProjReader {
 
     private void extract(File knxprojfile, File targetDir) {
         try {
+            if (!knxprojfile.exists()) {
+                throw new IllegalArgumentException("Given file '"+knxprojfile.getAbsolutePath()+"' does not exist");
+            }
             // Open the zip file
             try (ZipFile zipFile = new ZipFile(knxprojfile)) {
                 Enumeration<?> enu = zipFile.entries();
@@ -176,6 +180,8 @@ public class KnxProjReader {
                     fos.close();
 
                 }
+            } catch (ZipException ex) {
+                log.error("Error opening '"+knxprojfile.getAbsolutePath()+"'", ex);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -356,6 +362,11 @@ public class KnxProjReader {
         try {
             File userConfigFile = new File(knxprojFile.getAbsolutePath() + ".user.xml");
 
+            if (projects.isEmpty()) {
+                log.warn("No project found. Skipping userconfiguration.");
+                return;
+            }
+            
             Project project = projects.get(0);
 
             List<GroupAddress> gaWithMissingConfig = new ArrayList<>();
@@ -397,7 +408,7 @@ public class KnxProjReader {
                     if (!alreadyKnownUserConfigGa.contains(ga.getAddress())) {
                         Element gaElement = new Element("ga");
                         
-                        gaElement.addContent(new Comment(ga.getName()));
+                        gaElement.addContent(new Comment(" \""+ga.getName()+"\" "));
                         gaElement.setAttribute("address", ga.getAddress());
                         gaElement.setAttribute("dpt", "");
                         rootElement.addContent(gaElement);
